@@ -17,6 +17,8 @@ package com.edgytech.umongo;
 
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
+import com.mongodb.util.JSONSerializers;
+import com.mongodb.util.ObjectSerializer;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,7 +32,8 @@ import org.bson.BSON;
 public class DocumentSerializer {
 
     public enum Format {
-
+		JSON_LEGACY,
+		JSON_LEGACY_ARRAY,
         JSON,
         JSON_ARRAY,
         CSV,
@@ -102,7 +105,17 @@ public class DocumentSerializer {
         if (os == null) {
             os = new FileOutputStream(file);
         }
-
+		ObjectSerializer json = null;
+		switch (format) {
+			case JSON_LEGACY:
+			case JSON_LEGACY_ARRAY:
+				json = JSONSerializers.getLegacy();
+				break;
+			default:
+				json = JSONSerializers.getStrict();
+				break;				
+		}
+		
         if (first) {
             first = false;
             if (format == Format.CSV) {
@@ -111,7 +124,7 @@ public class DocumentSerializer {
                 else
                     os.write(fields.getBytes());
                 os.write('\n');
-            } else if (format == Format.JSON_ARRAY) {
+            } else if (format == Format.JSON_ARRAY || format == Format.JSON_LEGACY_ARRAY) {
                 os.write('[');
             }
         } else {
@@ -126,12 +139,12 @@ public class DocumentSerializer {
                     os.write(delimiter.getBytes());
                 }
                 String field = filter[i];
-                os.write(JSON.serialize(getFieldValueRecursive(obj, field)).getBytes());
+                os.write(json.serialize(getFieldValueRecursive(obj, field)).getBytes());
             }
         } else if (format == Format.BSON) {
             os.write(BSON.encode(obj));
         } else {
-            os.write(obj.toString().getBytes());
+            os.write(json.serialize(obj).getBytes());
         }
 
         if (format == Format.JSON || format == Format.CSV) {
@@ -140,7 +153,7 @@ public class DocumentSerializer {
     }
 
     public void close() throws IOException {
-        if (first == false && format == Format.JSON_ARRAY) {
+        if (first == false && ( format == Format.JSON_ARRAY || format == Format.JSON_LEGACY_ARRAY ) ) {
             os.write(']');
         }
         os.close();

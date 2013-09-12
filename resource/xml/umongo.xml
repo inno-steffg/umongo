@@ -72,7 +72,7 @@
             <FileSelectorField id="outputFile">
                 <FileSelectorDialog type="SAVE" mode="FILES_ONLY"/>
             </FileSelectorField>
-            <ComboBox id="format" items="JSON;JSON Array;CSV;BSON" toolTipText="the file format"/>
+            <ComboBox id="format" items="JSON Legacy;JSON Legacy Array;JSON Strict;JSON Strict Array;CSV;BSON" toolTipText="the file format"/>
             <TextField id="fields" toolTipText="Comma-separated list of fields to export, mandatory for CSV format"/>
             <CheckBox id="continueOnError" toolTipText="Continue after an error occurs"/>
             <Div id="csvOptions" label="CSV Options" titled="true">
