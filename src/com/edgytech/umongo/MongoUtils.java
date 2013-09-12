@@ -18,10 +18,15 @@ package com.edgytech.umongo;
 import com.mongodb.*;
 import java.util.Date;
 import java.util.Map;
+import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
 import javax.swing.tree.DefaultMutableTreeNode;
+import com.mongodb.util.JSONSerializers;
 import org.bson.LazyDBList;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.ObjectId;
+import org.bson.types.Binary;
 
 /**
  *
@@ -68,6 +73,34 @@ public class MongoUtils {
                 child.add(new DefaultMutableTreeNode("Time: " + id.getTime() + " = " + new Date(id.getTime()).toString()));
                 child.add(new DefaultMutableTreeNode("Machine: " + (id.getMachine() & 0xFFFFFFFFL)));
                 child.add(new DefaultMutableTreeNode("Inc: " + (id.getInc() & 0xFFFFFFFFL)));
+            } else if (val instanceof byte[]) {
+			    byte[] byteArray = (byte[])val;
+				DefaultMutableTreeNode arrayRepresentationNode = new DefaultMutableTreeNode("Array content");
+				child.add(arrayRepresentationNode);
+				for (int i = 0; i < byteArray.length; i++) {
+				    byte b = byteArray[i];
+				    arrayRepresentationNode.add(new DefaultMutableTreeNode("[" + (char)b + "]  " + Integer.toHexString(b & 0xFF)));
+				}
+				DefaultMutableTreeNode utf8RepresentationNode = new DefaultMutableTreeNode("UTF-8: " + new String(byteArray, StandardCharsets.UTF_8));
+				child.add(utf8RepresentationNode);
+				DefaultMutableTreeNode utf16RepresentationNode = new DefaultMutableTreeNode("UTF-16: " + new String(byteArray, StandardCharsets.UTF_16));
+				child.add(utf16RepresentationNode);
+				switch (byteArray.length) {
+					case 2:
+						child.add(new DefaultMutableTreeNode("char: " + ByteBuffer.wrap(byteArray).getChar()));
+						child.add(new DefaultMutableTreeNode("short: " + ByteBuffer.wrap(byteArray).getShort()));
+						break;
+					case 4:
+						child.add(new DefaultMutableTreeNode("int: " + ByteBuffer.wrap(byteArray).getInt()));
+						child.add(new DefaultMutableTreeNode("float: " + ByteBuffer.wrap(byteArray).getFloat()));
+						break;
+					case 8:
+						child.add(new DefaultMutableTreeNode("long: " + ByteBuffer.wrap(byteArray).getLong()));
+						child.add(new DefaultMutableTreeNode("double: " + ByteBuffer.wrap(byteArray).getDouble()));
+						break;
+					default:
+						// fall through
+				}
             }
             node.add(child);
         }
@@ -78,7 +111,7 @@ public class MongoUtils {
     }
 
     public static String getObjectString(Object obj, int limit) {
-        return limitString(obj != null ? obj.toString() : "null", limit);
+        return limitString(obj != null ? JSONSerializers.getStrict().serialize(obj) : "null", limit);
     }
 
     public static String limitString(String str, int limit) {
